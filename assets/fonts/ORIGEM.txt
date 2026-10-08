@@ -1,0 +1,3 @@
+Manrope, Google Fonts. Licença SIL Open Font License.
+Fonte: https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2
+Licença: https://raw.githubusercontent.com/google/fonts/main/ofl/manrope/OFL.txt
