@@ -1,5 +1,5 @@
 'use strict';
-// Links continuam funcionais sem JavaScript; nenhuma tag ou rastreamento é carregado.
+// Links continuam funcionais sem JavaScript. Medição opcional é controlada por consentimento.js.
 const panel = document.getElementById('contact-panel');
 const openButton = document.getElementById('panel-open');
 const closeButton = document.getElementById('panel-close');
