@@ -13,8 +13,6 @@
 .reg-consent-actions [data-reg-choice="accept"]:hover{background:#58f4b9;border-color:#215b39}
 .reg-consent-actions [data-reg-choice="reject"]{background:#fbfcf8;color:#215b39;border-color:#215b39}
 .reg-consent-actions [data-reg-choice="reject"]:hover{background:#e2eddd;border-color:#215b39}
-.reg-consent-actions [data-reg-choice="customize"],.reg-consent-actions [data-reg-choice="save"]{grid-column:1/-1;background:#fff}
-.reg-consent-actions [data-reg-choice="customize"]:hover,.reg-consent-actions [data-reg-choice="save"]:hover{background:#edf3e8}
 #solline-privacy :focus-visible{outline:2px solid #287455;outline-offset:3px}
 .reg-consent-dialog{color:#20342a;background:#fbfcf8;border:1px solid #ccd9c7;border-radius:18px;padding:26px;width:min(460px,calc(100% - 32px));max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain;box-shadow:0 14px 50px #152b2526}
 .reg-consent-dialog::backdrop{background:#15231b26}
@@ -26,8 +24,7 @@
 .reg-consent-necessary{padding:14px 0;border-bottom:1px solid #dbe3d6;margin-bottom:14px}
 .reg-consent-necessary h3{font:600 13px/1.5 var(--font,Arial,sans-serif);letter-spacing:normal}
 .reg-consent-necessary h3 span{display:inline-block;margin-left:6px;font-size:10px;font-weight:500;color:#4e654e;background:#edf2e8;padding:2px 7px;border-radius:5px}
-.reg-consent-category label{font:600 14px/1.5 var(--font,Arial,sans-serif);display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer}
-.reg-consent-category input{width:22px;height:22px;flex-shrink:0;accent-color:#215b39;margin:0}
+.reg-consent-category h3{font:600 14px/1.5 var(--font,Arial,sans-serif);display:flex;align-items:center;min-height:44px}
 .reg-consent-dialog .reg-consent-scope{font-size:12px;padding:12px;background:#eff4ea;border-radius:8px;margin:16px 0 8px}
 .reg-consent-details{font-size:12px;border-bottom:1px solid #dbe3d6}
 .reg-consent-details summary{min-height:44px;padding:12px 0;cursor:pointer;color:#315e44;font-size:12px}

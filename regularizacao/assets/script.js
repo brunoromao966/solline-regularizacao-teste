@@ -62,6 +62,11 @@ reducedMotion.addEventListener('change', () => {
 const floatingContact = document.getElementById('whatsapp-float');
 document.addEventListener('focusin', event => {
   if (!(event.target instanceof HTMLElement) || event.target === floatingContact) return;
+  // Ajustar apenas controles da página. O foco no <main> representa a região
+  // de leitura, não um botão encoberto. O consentimento gerencia seu próprio
+  // foco sem rolagem; seus controles fixos não devem deslocar o documento.
+  if (!event.target.matches('a[href], button, input, select, textarea, summary, [role="button"], [role="link"]') ||
+      event.target.closest('#solline-privacy') || event.target.matches('[data-reg-preferences]')) return;
   const rect = event.target.getBoundingClientRect();
   const floating = floatingContact.getBoundingClientRect();
   if (rect.right > floating.left && rect.left < floating.right && rect.bottom > floating.top && rect.top < floating.bottom) {
