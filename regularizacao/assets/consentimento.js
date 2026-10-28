@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const KEY = 'solline.regularizacao.consentimento.v1';
+  const RETURN_POSITION = KEY + '.returnPosition';
   const CONTAINER = 'GTM-K6K2ZRN';
   const DENIED = {
     ad_storage: 'denied', analytics_storage: 'denied',
@@ -49,6 +50,45 @@
   choice = readChoice();
   if (choice === true) { updateSignals(true); loadMeasurement(); }
 
+  function reloadAfterRevocation() {
+    // A recarga continua necessária para remover ouvintes das tags carregadas.
+    // Guardar somente a posição desta recarga, sem alterar a duração da escolha.
+    try {
+      sessionStorage.setItem(RETURN_POSITION, JSON.stringify({
+        path: location.pathname, x: window.scrollX, y: window.scrollY, time: Date.now()
+      }));
+    } catch (_) { /* A indisponibilidade do armazenamento não impede revogar. */ }
+    location.reload();
+  }
+
+  function restoreRevocationPosition() {
+    let position;
+    try {
+      position = JSON.parse(sessionStorage.getItem(RETURN_POSITION));
+      sessionStorage.removeItem(RETURN_POSITION);
+    } catch (_) { return; }
+    if (choice === true || !position || position.path !== location.pathname ||
+        !Number.isFinite(position.x) || !Number.isFinite(position.y) ||
+        !Number.isFinite(position.time) || Date.now() - position.time < 0 ||
+        Date.now() - position.time > 60000) return;
+    let cancelled = false;
+    const cancel = function () { cancelled = true; };
+    const gestures = ['pointerdown', 'touchstart', 'wheel', 'keydown'];
+    gestures.forEach(function (name) { window.addEventListener(name, cancel, { passive: true }); });
+    function restore() {
+      // Fontes e controles revelados podem mudar a altura durante a recarga.
+      const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+      fontsReady.then(function () {
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+          gestures.forEach(function (name) { window.removeEventListener(name, cancel); });
+          if (!cancelled) window.scrollTo({ left: position.x, top: position.y, behavior: 'instant' });
+        }); });
+      });
+    }
+    if (document.readyState === 'complete') restore();
+    else window.addEventListener('load', restore, { once: true });
+  }
+
   function init() {
     const ui = document.createElement('div');
     ui.id = 'solline-privacy';
@@ -61,7 +101,7 @@
             <button type="button" data-reg-choice="accept">Aceitar todos</button>
             <button type="button" data-reg-choice="reject">Rejeitar opcionais</button>
           </div>
-          <div class="reg-consent-footer"><button type="button" data-reg-choice="customize">Personalizar</button><a class="reg-consent-policy" href="privacidade.html">Política de Privacidade</a></div>
+          <div class="reg-consent-footer"><button type="button" data-reg-choice="customize">Saiba mais</button><a class="reg-consent-policy" href="privacidade.html">Política de Privacidade</a></div>
         </div>
       </section>
       <button class="reg-consent-launcher" type="button" data-reg-choice="customize" aria-controls="reg-preferences" aria-haspopup="dialog" hidden>Privacidade <span>Escolher cookies</span></button>
@@ -70,14 +110,13 @@
         <h2 id="reg-preferences-title" tabindex="-1" autofocus>Suas preferências</h2>
         <p id="reg-preferences-intro">Você decide sobre a medição opcional. O WhatsApp funciona com qualquer escolha.</p>
         <div class="reg-consent-necessary"><h3>Funcionamento da página <span>Necessário</span></h3><p>Recursos locais para exibir a página e lembrar sua escolha nesta aba.</p></div>
-        <div class="reg-consent-category"><label><input id="reg-measurement" type="checkbox" aria-describedby="reg-measurement-description"> Medição de campanhas e interações</label><p id="reg-measurement-description">Usa Google Tag Manager e Google Ads para medir visitas e cliques para abrir o WhatsApp. Um clique não comprova mensagem ou contratação.</p></div>
+        <div class="reg-consent-category"><h3>Medição de campanhas e interações</h3><p>Usa Google Tag Manager e Google Ads para medir visitas e cliques para abrir o WhatsApp. Um clique não comprova mensagem ou contratação.</p></div>
         <p class="reg-consent-scope">“Aceitar todos” autoriza somente essa medição. Não autoriza personalização de anúncios nem acesso ao conteúdo das conversas.</p>
         <details class="reg-consent-details"><summary>Sobre os dados e sua escolha</summary><p>Com sua autorização, o Google pode usar cookies e receber dados técnicos, identificadores publicitários e informações da interação. A configuração mantém analytics_storage e ad_personalization negados; não envia dados de formulários para conversões otimizadas.</p><p>A preferência vale para a área de regularização durante a sessão desta aba. Ela não configura outras abas, o site institucional nem o WhatsApp. Em uma nova sessão, o aviso poderá reaparecer.</p><p>Ao revogar na landing page, a página será recarregada para interromper as tags carregadas. A atualização do consentimento poderá ser comunicada ao Google. Cookies anteriores não são apagados automaticamente. Nesta política, a escolha será considerada no retorno à landing page na mesma aba.</p></details>
         <a class="reg-consent-policy" href="privacidade.html">Política de Privacidade</a>
         <div class="reg-consent-actions">
           <button type="button" data-reg-choice="accept">Aceitar todos</button>
           <button type="button" data-reg-choice="reject">Rejeitar opcionais</button>
-          <button type="button" data-reg-choice="save">Salvar preferências</button>
         </div>
       </dialog>
       <p class="reg-consent-status" role="status" aria-live="polite"></p>`;
@@ -85,7 +124,6 @@
     const banner = ui.querySelector('.reg-consent-banner');
     const launcher = ui.querySelector('.reg-consent-launcher');
     const dialog = ui.querySelector('dialog');
-    const checkbox = ui.querySelector('#reg-measurement');
     const status = ui.querySelector('[role="status"]');
     const preferenceButtons = document.querySelectorAll('[data-reg-preferences]');
     let previousFocus;
@@ -196,7 +234,6 @@
     }
     function openDialog() {
       previousFocus = document.activeElement;
-      checkbox.checked = choice === true;
       banner.hidden = true;
       launcher.hidden = true;
       dialog.showModal();
@@ -232,7 +269,7 @@
           updateSignals(false);
           // Remover só a nossa preferência, nunca cookies compartilhados.
           try { sessionStorage.removeItem(KEY); } catch (_) { /* armazenamento bloqueado */ }
-          if (readChoice() !== true) { location.reload(); return; }
+          if (readChoice() !== true) { reloadAfterRevocation(); return; }
           status.textContent = 'Não foi possível remover a preferência salva. O consentimento foi revogado nesta página. Feche esta aba e limpe as preferências deste site no navegador antes de voltar.';
           closeDialog();
           return;
@@ -250,7 +287,7 @@
       status.textContent = allowed ? 'Medição opcional autorizada nesta aba.' : 'Medição opcional rejeitada nesta aba.';
       if (revoke) {
         // Não basta remover o elemento <script>: isso deixaria ouvintes ativos.
-        location.reload();
+        reloadAfterRevocation();
         return;
       }
       if (allowed) loadMeasurement();
@@ -281,12 +318,12 @@
       else if (action === 'close') closeDialog();
       else if (action === 'accept') save(true);
       else if (action === 'reject') save(false);
-      else if (action === 'save') save(checkbox.checked);
     });
     preferenceButtons.forEach(function (button) {
       button.hidden = false;
       button.addEventListener('click', openDialog);
     });
+    restoreRevocationPosition();
     // Reavaliar a preferência em uma volta pelo histórico (incluindo bfcache).
     window.addEventListener('pageshow', function (event) {
       if (event.persisted) location.reload();
